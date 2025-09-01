@@ -1,1 +1,117 @@
+<!-- 
+
+Hello Camper!
+
+Please read the READM<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Drum Machine</title>
+    <style>
+      :root{--bg:#0b1220;--panel:#0f1724;--accent:#60a5fa;--fg:#e6eef8}
+      *{box-sizing:border-box}
+      body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#031025 0%,#071029 100%);font-family:Inter,Segoe UI,Roboto,system-ui;color:var(--fg)}
+      #drum-machine{width:min(760px,95vw);background:var(--panel);padding:20px;border-radius:12px;box-shadow:0 12px 30px rgba(2,6,23,.7);display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center}
+      #display{grid-column:1/3;background:#071226;padding:12px;border-radius:8px;text-align:center;font-weight:600}
+      .pads{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+      .drum-pad{background:#091424;border:1px solid rgba(255,255,255,0.04);padding:18px;border-radius:8px;text-align:center;font-weight:700;cursor:pointer;user-select:none;transition:transform .08s ease,box-shadow .08s ease}
+      .drum-pad:active,.drum-pad.active{transform:translateY(2px) scale(.995);box-shadow:inset 0 2px 6px rgba(0,0,0,.5)}
+      .drum-pad small{display:block;margin-top:6px;color:#9fb0cc;font-weight:500}
+      .controls{display:flex;flex-direction:column;gap:12px}
+      .power{display:flex;justify-content:space-between;align-items:center}
+      button{background:var(--accent);border:none;padding:10px 14px;border-radius:8px;color:#042033;font-weight:700;cursor:pointer}
+      @media (max-width:720px){#drum-machine{grid-template-columns:1fr;}}
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <!-- React 17 -->
+    <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <script type="text/babel">
+      const PADS = [
+        { key: 'Q', id: 'Heater-1', url: 'https://s3.amazonaws.com/freecodecamp/drums/Heater-1.mp3' },
+        { key: 'W', id: 'Heater-2', url: 'https://s3.amazonaws.com/freecodecamp/drums/Heater-2.mp3' },
+        { key: 'E', id: 'Heater-3', url: 'https://s3.amazonaws.com/freecodecamp/drums/Heater-3.mp3' },
+        { key: 'A', id: 'Heater-4', url: 'https://s3.amazonaws.com/freecodecamp/drums/Heater-4_1.mp3' },
+        { key: 'S', id: 'Clap',    url: 'https://s3.amazonaws.com/freecodecamp/drums/Heater-6.mp3' },
+        { key: 'D', id: "Open-HH", url: 'https://s3.amazonaws.com/freecodecamp/drums/Dsc_Oh.mp3' },
+        { key: 'Z', id: "Kick-n'-Hat", url: 'https://s3.amazonaws.com/freecodecamp/drums/Kick_n_Hat.mp3' },
+        { key: 'X', id: 'Kick',    url: 'https://s3.amazonaws.com/freecodecamp/drums/RP4_KICK_1.mp3' },
+        { key: 'C', id: 'Closed-HH', url: 'https://s3.amazonaws.com/freecodecamp/drums/Cev_H2.mp3' }
+      ];
+
+      function DrumPad({ pad, play }){
+        const handleClick = () => play(pad.key, pad.id);
+        return (
+          <div id={pad.id} className="drum-pad" onClick={handleClick} role="button" tabIndex="0">
+            {pad.key}
+            <small>{pad.id}</small>
+            <audio className="clip" id={pad.key} src={pad.url} preload="auto"></audio>
+          </div>
+        );
+      }
+
+      function App(){
+        const [display, setDisplay] = React.useState('Ready');
+
+        React.useEffect(()=>{
+          function onKey(e){
+            const key = e.key.toUpperCase();
+            const match = PADS.find(p=>p.key===key);
+            if(match){
+              e.preventDefault();
+              playSound(key, match.id);
+            }
+          }
+          window.addEventListener('keydown', onKey);
+          return ()=> window.removeEventListener('keydown', onKey);
+        }, []);
+
+        const playSound = (key, name) => {
+          const audio = document.getElementById(key);
+          if(!audio) return;
+          audio.currentTime = 0;
+          audio.play();
+          setDisplay(name);
+          // visual active class
+          const parent = audio.parentElement;
+          parent.classList.add('active');
+          setTimeout(()=> parent.classList.remove('active'), 120);
+        };
+
+        return (
+          <div id="drum-machine">
+            <div className="pads">
+              {PADS.map(p=> (
+                <DrumPad key={p.key} pad={p} play={playSound} />
+              ))}
+            </div>
+            <div className="controls">
+              <div id="display">{display}</div>
+              <div className="power">
+                <span>Click pads or press Q W E A S D Z X C</span>
+                <button onClick={()=>setDisplay('Ready')}>Reset</button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      ReactDOM.render(<App />, document.getElementById('app'));
+    </script>
+
+    <!-- FCC Test Bundle -->
+    <script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
+  </body>
+</html>
+E below in the JS Editor before beginning. Feel free to delete this message once you have read it. Good luck and Happy Coding! 
+
+- The freeCodeCamp Team 
+
+-->
 
