@@ -1,1 +1,196 @@
 
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>25 + 5 Clock</title>
+  <style>
+    :root{--bg:#071226;--card:#0f1724;--accent:#60a5fa;--fg:#e6eef8}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#031025,#071029);font-family:Inter,system-ui,Segoe UI,Roboto;color:var(--fg)}
+    #app-wrap{width:min(520px,95vw);padding:20px}
+    #clock{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 12px 30px rgba(2,6,23,.7);}
+    .labels{display:flex;gap:20px;justify-content:space-between}
+    .control{background:#071226;padding:12px;border-radius:8px;width:48%;text-align:center}
+    .control h3{margin:0 0 8px}
+    .btn-row{display:flex;gap:8px;justify-content:center;align-items:center}
+    button{background:var(--accent);border:none;padding:8px 12px;border-radius:6px;color:#042433;font-weight:700;cursor:pointer}
+    .small{background:#0b2138;color:var(--fg)}
+    #timer{margin-top:18px;background:#071226;padding:18px;border-radius:8px;text-align:center}
+    #time-left{font-size:3rem;margin-top:8px}
+    .controls-main{display:flex;gap:12px;justify-content:center;margin-top:12px}
+    #start_stop,#reset{padding:8px 14px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <div id="app-wrap">
+    <div id="clock">
+      <div class="labels">
+        <div id="break-label" class="control">
+          <h3>Break Length</h3>
+          <div class="btn-row">
+            <button id="break-decrement" class="small">-</button>
+            <div id="break-length">5</div>
+            <button id="break-increment" class="small">+</button>
+          </div>
+        </div>
+        <div id="session-label" class="control">
+          <h3>Session Length</h3>
+          <div class="btn-row">
+            <button id="session-decrement" class="small">-</button>
+            <div id="session-length">25</div>
+            <button id="session-increment" class="small">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="timer">
+        <div id="timer-label">Session</div>
+        <div id="time-left">25:00</div>
+        <div class="controls-main">
+          <button id="start_stop">Start/Stop</button>
+          <button id="reset" class="small">Reset</button>
+        </div>
+      </div>
+      <!-- beep audio must be >= 1 second -->
+      <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
+    </div>
+  </div>
+
+  <!-- React 17 -->
+  <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+  <script type="text/babel">
+    function formatTime(seconds){
+      const mm = Math.floor(seconds/60).toString().padStart(2,'0');
+      const ss = (seconds%60).toString().padStart(2,'0');
+      return `${mm}:${ss}`;
+    }
+
+    function App(){
+      const [breakLen, setBreakLen] = React.useState(5);
+      const [sessionLen, setSessionLen] = React.useState(25);
+      const [secondsLeft, setSecondsLeft] = React.useState(25*60);
+      const [isRunning, setIsRunning] = React.useState(false);
+      const [mode, setMode] = React.useState('Session'); // 'Session' or 'Break'
+
+      const beepRef = React.useRef(null);
+      const timerRef = React.useRef(null);
+
+      // ensure time-left updates when sessionLen changed and not running
+      React.useEffect(()=>{
+        if(!isRunning && mode==='Session'){
+          setSecondsLeft(sessionLen*60);
+        }
+      },[sessionLen, isRunning, mode]);
+
+      React.useEffect(()=>{
+        if(!isRunning) return;
+        // start interval
+        timerRef.current = setInterval(()=>{
+          setSecondsLeft(prev => {
+            if(prev > 1){
+              return prev - 1;
+            }
+            if(prev === 1){
+              // will become 0; display 00:00
+              // after setting to 0, play beep and wait 1s before switching
+              // return 0 now, and schedule mode switch
+              // but setTimeout should be set here in the setter callback
+              setTimeout(()=>{
+                // switch mode
+                setMode(curr => {
+                  const next = curr === 'Session' ? 'Break' : 'Session';
+                  // set secondsLeft to new length
+                  setSecondsLeft(next === 'Session' ? sessionLen*60 : breakLen*60);
+                  return next;
+                });
+              }, 1000);
+              // play beep
+              if(beepRef.current){
+                beepRef.current.currentTime = 0;
+                beepRef.current.play();
+              }
+              return 0;
+            }
+            // prev === 0 (shouldn't normally happen because we schedule switch)
+            return prev;
+          });
+        }, 1000);
+        return ()=> clearInterval(timerRef.current);
+      }, [isRunning, sessionLen, breakLen]);
+
+      const handleStartStop = () => {
+        setIsRunning(r => !r);
+      };
+
+      const handleReset = () => {
+        // stop
+        setIsRunning(false);
+        if(timerRef.current) { clearInterval(timerRef.current); }
+        // reset values
+        setBreakLen(5);
+        setSessionLen(25);
+        setMode('Session');
+        setSecondsLeft(25*60);
+        // stop and rewind beep
+        if(beepRef.current){
+          beepRef.current.pause();
+          beepRef.current.currentTime = 0;
+        }
+      };
+
+      const changeBreak = (delta) => {
+        setBreakLen(prev => {
+          const next = Math.min(60, Math.max(1, prev + delta));
+          return next;
+        });
+      };
+      const changeSession = (delta) => {
+        setSessionLen(prev => {
+          const next = Math.min(60, Math.max(1, prev + delta));
+          return next;
+        });
+      };
+
+      // bind controls to IDs required by FCC tests
+      React.useEffect(()=>{
+        document.getElementById('break-decrement').onclick = ()=>{ if(!isRunning) changeBreak(-1); };
+        document.getElementById('break-increment').onclick = ()=>{ if(!isRunning) changeBreak(1); };
+        document.getElementById('session-decrement').onclick = ()=>{ if(!isRunning) changeSession(-1); };
+        document.getElementById('session-increment').onclick = ()=>{ if(!isRunning) changeSession(1); };
+        document.getElementById('start_stop').onclick = handleStartStop;
+        document.getElementById('reset').onclick = handleReset;
+      }, [isRunning]);
+
+      // update displayed numbers in DOM elements with required IDs
+      React.useEffect(()=>{
+        document.getElementById('break-length').textContent = breakLen;
+      }, [breakLen]);
+      React.useEffect(()=>{
+        document.getElementById('session-length').textContent = sessionLen;
+      }, [sessionLen]);
+      React.useEffect(()=>{
+        document.getElementById('timer-label').textContent = mode;
+      }, [mode]);
+      React.useEffect(()=>{
+        document.getElementById('time-left').textContent = formatTime(secondsLeft);
+      }, [secondsLeft]);
+
+      return (
+        <div>
+          <audio id="beep" ref={beepRef} src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('app-wrap'));
+  </script>
+
+  <!-- FCC Test Bundle -->
+  <script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
+</body>
+</html>
