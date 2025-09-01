@@ -1,1 +1,141 @@
+<!-- 
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Markdown Previewer</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        background: #0f172a;
+        color: #f3f4f6;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }
+      h1 {
+        margin-bottom: 1rem;
+      }
+      .container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        width: min(1200px, 95vw);
+      }
+      textarea#editor {
+        width: 100%;
+        height: 80vh;
+        resize: none;
+        padding: 1rem;
+        border-radius: 8px;
+        border: none;
+        font-size: 1rem;
+        font-family: monospace;
+        background: #111827;
+        color: #f3f4f6;
+      }
+      #preview {
+        background: #1f2937;
+        padding: 1rem;
+        border-radius: 8px;
+        overflow-y: auto;
+        height: 80vh;
+      }
+      code {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.2em 0.4em;
+        border-radius: 4px;
+      }
+      pre code {
+        display: block;
+        padding: 1em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Markdown Previewer</h1>
+    <div class="container">
+      <textarea id="editor"></textarea>
+      <div id="preview"></div>
+    </div>
+
+    <!-- React 17 -->
+    <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <!-- Marked library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.12/marked.min.js"></script>
+
+    <script type="text/babel">
+      const defaultMarkdown = `# Welcome to my Markdown Previewer!
+
+## This is a sub-heading...
+
+Here's a link to [freeCodeCamp](https://www.freecodecamp.org).
+
+Inline code: \`<div></div>\`
+
+Code block:
+\`
+function greet(name) {
+  return 'Hello ' + name;
+}
+\`
+
+- List item 1
+- List item 2
+
+> A blockquote!
+
+![FCC Logo](https://upload.wikimedia.org/wikipedia/commons/3/39/FreeCodeCamp_logo.png)
+
+**Bolded text!**`;
+
+      function App() {
+        const [markdown, setMarkdown] = React.useState(defaultMarkdown);
+
+        React.useEffect(() => {
+          document.getElementById('editor').value = defaultMarkdown;
+        }, []);
+
+        const handleChange = (e) => {
+          setMarkdown(e.target.value);
+        };
+
+        const getMarkdownText = () => {
+          return { __html: marked.parse(markdown, { breaks: true }) };
+        };
+
+        return (
+          <>
+            <textarea
+              id="editor"
+              value={markdown}
+              onChange={handleChange}
+            />
+            <div id="preview" dangerouslySetInnerHTML={getMarkdownText()}></div>
+          </>
+        );
+      }
+
+      ReactDOM.render(<App />, document.querySelector('.container'));
+    </script>
+
+    <!-- FCC Test Bundle -->
+    <script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
+  </body>
+</html>
+
+Hello Camper!
+
+Please read the README below in the JS Editor before beginning. Feel free to delete this message once you have read it. Good luck and Happy Coding! 
+
+- The freeCodeCamp Team 
+
+-->
 
