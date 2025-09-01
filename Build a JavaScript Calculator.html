@@ -1,1 +1,217 @@
+<!-- 
+
+Hello Camper!<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>JavaScript Calculator</title>
+  <style>
+    :root{--bg:#081229;--panel:#0f1724;--accent:#60a5fa;--fg:#e6eef8}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#031025,#071029);font-family:Inter,system-ui,Segoe UI,Roboto;color:var(--fg)}
+    #calculator{width:320px;background:var(--panel);padding:16px;border-radius:12px;box-shadow:0 12px 30px rgba(2,6,23,.7)}
+    #display{background:#071226;padding:12px;border-radius:8px;text-align:right;font-size:1.5rem;min-height:48px;display:flex;align-items:center;justify-content:flex-end}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+    button{padding:14px;border-radius:8px;border:none;background:#0b2138;color:var(--fg);font-weight:700;cursor:pointer}
+    button.operator{background:#19334d}
+    button.equals{grid-column:span 2;background:var(--accent);color:#022434}
+    button.zero{grid-column:span 2}
+    #clear{background:#7f1d1d}
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- React 17 -->
+  <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+  <script type="text/babel">
+    const ops = ['+','-','*','/'];
+
+    function Calculator(){
+      const [display, setDisplay] = React.useState('0');
+      const [tokens, setTokens] = React.useState([]); // stores numbers and operators as strings
+      const [current, setCurrent] = React.useState(''); // current number being typed
+      const [justEvaluated, setJustEvaluated] = React.useState(false);
+
+      const updateDisplayFromCurrent = (val) => {
+        setDisplay(val === '' ? '0' : val);
+      };
+
+      const inputDigit = (d) => {
+        // If just evaluated and user starts typing digit, reset
+        if(justEvaluated){
+          setTokens([]);
+          setCurrent(d === '0' ? '0' : d);
+          setDisplay(d);
+          setJustEvaluated(false);
+          return;
+        }
+
+        // Prevent multiple leading zeros
+        if(current === '0' && d === '0') return;
+        if(current === '0' && d !== '0' && !current.includes('.')){
+          setCurrent(d);
+          updateDisplayFromCurrent(d);
+          return;
+        }
+
+        const next = current + d;
+        setCurrent(next);
+        updateDisplayFromCurrent(next);
+      };
+
+      const inputDecimal = () => {
+        if(justEvaluated){
+          setTokens([]);
+          setCurrent('0.');
+          updateDisplayFromCurrent('0.');
+          setJustEvaluated(false);
+          return;
+        }
+        if(current.includes('.')) return;
+        const next = current === '' ? '0.' : current + '.';
+        setCurrent(next);
+        updateDisplayFromCurrent(next);
+      };
+
+      const inputOperator = (op) => {
+        setJustEvaluated(false);
+        // If currently typing a number, push it
+        if(current !== ''){
+          setTokens(t => [...t, current, op]);
+          setCurrent('');
+          updateDisplayFromCurrent(op);
+          return;
+        }
+        // current is empty
+        if(tokens.length === 0){
+          // allow negative start
+          if(op === '-'){
+            setCurrent('-'); updateDisplayFromCurrent('-');
+          }
+          return;
+        }
+        // tokens exist. If last token is operator, handle consecutive operators
+        const last = tokens[tokens.length-1];
+        if(ops.includes(last)){
+          // If last operator followed by '-' and user presses '-', ignore (avoid --)
+          if(op === '-' && last !== '-'){
+            // allow negative sign for next number: push '-' as part of number
+            setCurrent('-'); updateDisplayFromCurrent('-');
+            return;
+          }
+          // replace last operator with new operator (the last operator entered takes precedence)
+          const replaced = [...tokens.slice(0, -1), op];
+          setTokens(replaced);
+          updateDisplayFromCurrent(op);
+        } else {
+          // last token is number, just push operator
+          setTokens(t => [...t, op]);
+          updateDisplayFromCurrent(op);
+        }
+      };
+
+      const clearAll = () => {
+        setTokens([]); setCurrent(''); setDisplay('0'); setJustEvaluated(false);
+      };
+
+      const evaluate = () => {
+        // Build expression from tokens and current
+        let exprTokens = [...tokens];
+        if(current !== '') exprTokens.push(current);
+        // Remove trailing operator
+        while(exprTokens.length > 0 && ops.includes(exprTokens[exprTokens.length-1])) exprTokens.pop();
+        if(exprTokens.length === 0) return;
+
+        const expr = exprTokens.join(' ');
+        // Evaluate safely using Function
+        try{
+          // Replace any accidental leading zeros in numbers? JS handles fine.
+          let result = Function(`return (${expr})`)();
+          if(!isFinite(result)) { setDisplay('Error'); return; }
+          // round to reasonable precision
+          result = Math.round((result + Number.EPSILON) * 10000000000) / 10000000000;
+          // trim trailing zeros
+          let out = result.toString();
+          if(out.indexOf('.') !== -1){
+            // remove trailing zeros
+            out = parseFloat(out).toString();
+          }
+          setDisplay(out);
+          setTokens([]);
+          setCurrent(out);
+          setJustEvaluated(true);
+        }catch(e){
+          setDisplay('Error');
+        }
+      };
+
+      // Buttons handlers
+      const handleClick = (e) => {
+        const id = e.target.id;
+        switch(id){
+          case 'zero': inputDigit('0'); break;
+          case 'one': inputDigit('1'); break;
+          case 'two': inputDigit('2'); break;
+          case 'three': inputDigit('3'); break;
+          case 'four': inputDigit('4'); break;
+          case 'five': inputDigit('5'); break;
+          case 'six': inputDigit('6'); break;
+          case 'seven': inputDigit('7'); break;
+          case 'eight': inputDigit('8'); break;
+          case 'nine': inputDigit('9'); break;
+          case 'decimal': inputDecimal(); break;
+          case 'add': inputOperator('+'); break;
+          case 'subtract': inputOperator('-'); break;
+          case 'multiply': inputOperator('*'); break;
+          case 'divide': inputOperator('/'); break;
+          case 'equals': evaluate(); break;
+          case 'clear': clearAll(); break;
+          default: break;
+        }
+      };
+
+      return (
+        <div id="calculator">
+          <div id="display">{display}</div>
+          <div className="grid">
+            <button id="clear" onClick={handleClick}>AC</button>
+            <button id="divide" className="operator" onClick={handleClick}>/</button>
+            <button id="multiply" className="operator" onClick={handleClick}>*</button>
+            <button id="seven" onClick={handleClick}>7</button>
+            <button id="eight" onClick={handleClick}>8</button>
+            <button id="nine" onClick={handleClick}>9</button>
+            <button id="subtract" className="operator" onClick={handleClick}>-</button>
+            <button id="four" onClick={handleClick}>4</button>
+            <button id="five" onClick={handleClick}>5</button>
+            <button id="six" onClick={handleClick}>6</button>
+            <button id="add" className="operator" onClick={handleClick}>+</button>
+            <button id="one" onClick={handleClick}>1</button>
+            <button id="two" onClick={handleClick}>2</button>
+            <button id="three" onClick={handleClick}>3</button>
+            <button id="equals" className="equals" onClick={handleClick}>=</button>
+            <button id="zero" className="zero" onClick={handleClick}>0</button>
+            <button id="decimal" onClick={handleClick}>.</button>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<Calculator />, document.getElementById('app'));
+  </script>
+
+  <!-- FCC Test Bundle -->
+  <script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
+</body>
+</html>
+
+Please read the README below in the JS Editor before beginning. Feel free to delete this message once you have read it. Good luck and Happy Coding! 
+
+- The freeCodeCamp Team 
+
+-->
 
