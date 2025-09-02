@@ -11,7 +11,6 @@
 This repository contains five projects completed as part of the **Front End Libraries** course on FreeCodeCamp. These projects showcase proficiency in **HTML, CSS, JavaScript, and React.js, redux.js, jquery, sass**.
 
 ---
----
 
 ## Projects
 
